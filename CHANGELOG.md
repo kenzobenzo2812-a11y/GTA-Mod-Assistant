@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.2.4
+- **Install readiness feedback:** The app now explains when Install is unavailable because GTA V is not detected or no install steps are selected, and refreshes the status as those conditions change.
+
 ## v1.2.0-beta
 - **Safe Memory & Modding Junk Cleaner:** Dedicated **Memory & Junk Cleanup** tab that cleans leftover mod staging caches, orphaned uninstalled mod stashes, large GTA V / OpenIV `.dmp` crash dumps, stale `%TEMP%` archive remnants, SQLite WAL bloat, and trims idle user-space RAM working sets — while strictly protecting `mods\`, installed mods, active backups, and Windows boot/system memory settings.
 - **No-README Disclaimer & AI Deep File Analysis:** Automatically detects mods packaged without a README, warns about missing author notes, and inspects raw `dlc.rpf` (`setup2.xml`/`content.xml`), `RSC7` (`.yft`/`_hi.yft`/`.ytd`), `.meta` `<modelName>` spawn names, and PE script headers.

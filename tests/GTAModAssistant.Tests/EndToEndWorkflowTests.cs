@@ -49,6 +49,26 @@ public sealed class EndToEndWorkflowTests
             await vm.HandleDroppedPathsAsync(new[] { modZip });
             Assert.NotNull(vm.CurrentPlan);
             Assert.True(vm.CurrentPlan!.CanInstall);
+            Assert.True(vm.InstallModCommand.CanExecute(null));
+
+            foreach (var step in vm.CurrentPlan.Steps.Where(step => step.IsSelectedForInstall).ToArray())
+            {
+                vm.ToggleStepIncluded(step);
+            }
+
+            Assert.False(vm.CurrentPlan!.CanInstall);
+            Assert.False(vm.InstallModCommand.CanExecute(null));
+            Assert.Contains("NO INSTALL STEPS SELECTED", vm.PlanStatusHeadline);
+            Assert.Contains("Select at least one step", vm.StatusBannerText);
+
+            foreach (var step in vm.CurrentPlan.Steps.Where(step => !step.IsSelectedForInstall).ToArray())
+            {
+                vm.ToggleStepIncluded(step);
+            }
+
+            Assert.True(vm.CurrentPlan!.CanInstall);
+            Assert.True(vm.InstallModCommand.CanExecute(null));
+            Assert.Contains("PREVIEW READY", vm.PlanStatusHeadline);
 
             // 3. Install Mod
             await vm.ExecutePlannedInstallAsync();

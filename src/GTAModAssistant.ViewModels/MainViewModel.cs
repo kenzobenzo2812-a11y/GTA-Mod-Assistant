@@ -289,6 +289,10 @@ public sealed class MainViewModel : ObservableObject
             {
                 InstallModCommand.RaiseCanExecuteChanged();
                 CreateBackupCommand.RaiseCanExecuteChanged();
+                if (CurrentPlan is not null)
+                {
+                    UpdateInstallationPlanStatus(CurrentPlan);
+                }
             }
         }
     }
@@ -605,40 +609,13 @@ public sealed class MainViewModel : ObservableObject
                 modNamesById));
 
             CurrentPlan = plan;
-            PlanStatusHeadline = plan.CanInstall
-                ? "PREVIEW READY — CLICK 'INSTALL MOD NOW' ON THE RIGHT TO INSTALL INTO GTA V"
-                : "BLOCKED BY SAFETY / COMPATIBILITY CHECK — REVIEW DETAILS BELOW";
+            UpdateInstallationPlanStatus(plan);
 
             _repository.AppendLog(
                 plan.CanInstall ? AuditLogLevel.Info : AuditLogLevel.Warning,
                 "Analyzer",
                 $"Prepared installation plan for '{plan.ModName}' ({plan.Category}, {plan.Steps.Count} step(s))",
                 $"Engine: {plan.AnalysisEngineUsed} | Compatibility: {plan.Compatibility.Headline} | Conflicts: {plan.Conflicts.Count} | Uncertain Targets: {plan.UnresolvedTargetCount} | Security Findings: {plan.SecurityFindings.Count}");
-
-            if (!plan.CanInstall)
-            {
-                SetBanner(
-                    StatusBannerSeverity.Error,
-                    $"Blocked from auto-installing '{plan.ModName}': {plan.Compatibility.Headline}");
-            }
-            else if (plan.HasUnresolvedTargets)
-            {
-                SetBanner(
-                    StatusBannerSeverity.Warning,
-                    $"Action needed for '{plan.ModName}': {plan.UnresolvedTargetCount} .yft/.ytd file(s) have an uncertain RPF archive — click 'Choose RPF...' or 'Install' to select destination.");
-            }
-            else if (plan.Compatibility.Severity == CompatibilitySeverity.WarningOutdated || plan.Conflicts.Count > 0)
-            {
-                SetBanner(
-                    StatusBannerSeverity.Warning,
-                    $"Plan ready for '{plan.ModName}' with {plan.Conflicts.Count} conflict/duplicate warning(s) — review preview table before clicking Install.");
-            }
-            else
-            {
-                SetBanner(
-                    StatusBannerSeverity.Verified,
-                    $"Installation plan ready for '{plan.ModName}' ({plan.Steps.Count} safe step(s)). Click 'Install' to proceed.");
-            }
 
             UpdateProgress(100, "Plan Ready", $"{plan.ModName} ({plan.Steps.Count} step(s))");
         }
@@ -680,19 +657,13 @@ public sealed class MainViewModel : ObservableObject
             activeFiles,
             GameEnv,
             modNamesById);
+        UpdateInstallationPlanStatus(CurrentPlan);
 
         _repository.AppendLog(
             AuditLogLevel.Info,
             "Analyzer",
             $"User selected RPF target for '{step.FileName}': {decision.OuterRpfRelativePath} -> {decision.InternalPath}",
             $"ApplyToCompanionStemFiles={decision.ApplyToCompanionStemFiles}");
-
-        if (!CurrentPlan.HasUnresolvedTargets)
-        {
-            SetBanner(
-                CurrentPlan.Conflicts.Count > 0 ? StatusBannerSeverity.Warning : StatusBannerSeverity.Verified,
-                $"All RPF archive destinations confirmed for '{CurrentPlan.ModName}'. Ready to install.");
-        }
 
         return true;
     }
@@ -715,6 +686,7 @@ public sealed class MainViewModel : ObservableObject
             activeFiles,
             GameEnv,
             modNamesById);
+        UpdateInstallationPlanStatus(CurrentPlan);
     }
 
     public async Task ExecutePlannedInstallAsync(ConflictResolutionStrategy? explicitStrategy = null)
@@ -1349,6 +1321,57 @@ public sealed class MainViewModel : ObservableObject
             StatusBannerKind = severity;
             StatusBannerText = text;
         });
+    }
+
+    private void UpdateInstallationPlanStatus(ModInstallationPlan plan)
+    {
+        if (!GameEnv.IsDetected)
+        {
+            PlanStatusHeadline = "GTA V NOT DETECTED — CLICK 'SCAN GAME' BEFORE INSTALLING";
+            SetBanner(
+                StatusBannerSeverity.Warning,
+                $"Plan ready for '{plan.ModName}', but GTA V is not detected. Click 'Scan Game' before installing.");
+            return;
+        }
+
+        if (!plan.CanInstall && !plan.Steps.Any(step => step.IsSelectedForInstall))
+        {
+            PlanStatusHeadline = "NO INSTALL STEPS SELECTED — SELECT AT LEAST ONE STEP";
+            SetBanner(
+                StatusBannerSeverity.Warning,
+                $"No install steps are selected for '{plan.ModName}'. Select at least one step to enable Install.");
+            return;
+        }
+
+        if (!plan.CanInstall)
+        {
+            PlanStatusHeadline = "BLOCKED BY SAFETY / COMPATIBILITY CHECK — REVIEW DETAILS BELOW";
+            SetBanner(
+                StatusBannerSeverity.Error,
+                $"Blocked from auto-installing '{plan.ModName}': {plan.Compatibility.Headline}");
+            return;
+        }
+
+        PlanStatusHeadline = "PREVIEW READY — CLICK 'INSTALL MOD NOW' ON THE RIGHT TO INSTALL INTO GTA V";
+
+        if (plan.HasUnresolvedTargets)
+        {
+            SetBanner(
+                StatusBannerSeverity.Warning,
+                $"Action needed for '{plan.ModName}': {plan.UnresolvedTargetCount} .yft/.ytd file(s) have an uncertain RPF archive — click 'Choose RPF...' or 'Install' to select destination.");
+        }
+        else if (plan.Compatibility.Severity == CompatibilitySeverity.WarningOutdated || plan.Conflicts.Count > 0)
+        {
+            SetBanner(
+                StatusBannerSeverity.Warning,
+                $"Plan ready for '{plan.ModName}' with {plan.Conflicts.Count} conflict/duplicate warning(s) — review preview table before clicking Install.");
+        }
+        else
+        {
+            SetBanner(
+                StatusBannerSeverity.Verified,
+                $"Installation plan ready for '{plan.ModName}' ({plan.Steps.Count} safe step(s)). Click 'Install' to proceed.");
+        }
     }
 
     public async Task ScanCleanupAsync(
