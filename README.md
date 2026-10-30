@@ -4,6 +4,12 @@ An AI-powered **Windows Desktop Application (C# / .NET 8 / WPF)** that analyzes,
 
 **This project is open source under the [MIT License](LICENSE).** The complete application, CLI, installer, and tests are available in this repository.
 
+## Download the latest version
+
+Get the official Windows downloads from the **[latest GitHub release](https://github.com/kenzobenzo2812-a11y/GTA-Mod-Assistant/releases/latest)**. That link always points to the newest published version. Verify downloads using the `SHA256SUMS.txt` attached to each release.
+
+Every version tag pushed to this repository runs the tests, builds the portable app and installer, and publishes them with checksums as a new GitHub release.
+
 ---
 
 ## Which File Should I Download?
@@ -72,4 +78,4 @@ dotnet run --project src\GTAModAssistant.App\GTAModAssistant.App.csproj
 .\scripts\build-windows.ps1
 ```
 
-The GitHub Actions workflow runs the solution tests on pushes and pull requests. Windows release binaries remain available from the [GitHub Releases](../../releases) page.
+The GitHub Actions workflow runs the solution tests on pushes and pull requests. Push a version tag such as `v1.2.1` to build and publish a new Windows release automatically.

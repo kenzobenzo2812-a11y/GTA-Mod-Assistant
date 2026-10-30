@@ -4,17 +4,18 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   build-and-test:
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -25,3 +26,91 @@ jobs:
 
       - name: Build solution and run tests
         run: dotnet test GTAModAssistant.sln -c Release
+
+  publish-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-and-test
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install NSIS
+        run: choco install nsis --yes --no-progress
+
+      - name: Prepare release directories
+        id: version
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist, publish-portable, publish-setup | Out-Null
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Publish portable Windows x64 app
+        shell: pwsh
+        run: |
+          dotnet publish src/GTAModAssistant.App/GTAModAssistant.App.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:DebugType=none -p:DebugSymbols=false `
+            -o publish-portable
+          if ($LASTEXITCODE -ne 0) { throw "Portable app publish failed." }
+          Copy-Item publish-portable/GTAModAssistant.exe dist/GTAModAssistant-Portable-win-x64.exe
+
+      - name: Publish installer payload and build setup
+        shell: pwsh
+        run: |
+          dotnet publish src/GTAModAssistant.App/GTAModAssistant.App.csproj `
+            -c Release -r win-x64 --self-contained false `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:PublishSingleFile=true -p:DebugType=none -p:DebugSymbols=false `
+            -o publish-setup
+          if ($LASTEXITCODE -ne 0) { throw "Desktop installer payload publish failed." }
+
+          dotnet publish src/GTAModAssistant.Cli/GTAModAssistant.Cli.csproj `
+            -c Release -r win-x64 --self-contained false `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:PublishSingleFile=true -p:DebugType=none -p:DebugSymbols=false `
+            -o publish-setup
+          if ($LASTEXITCODE -ne 0) { throw "CLI installer payload publish failed." }
+
+          makensis /DPUBLISH_DIR="publish-setup" /DAPP_ICON_PATH="src\GTAModAssistant.App\Assets\app.ico" /DOUTPUT_SETUP_EXE="dist\GTAModAssistant-Setup-win-x64.exe" installer\GTAModAssistant.nsi
+          if ($LASTEXITCODE -ne 0) { throw "NSIS installer build failed." }
+
+      - name: Generate SHA-256 checksums
+        shell: pwsh
+        run: |
+          $checksums = Get-ChildItem dist/*.exe | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          }
+          $checksums | Set-Content dist/SHA256SUMS.txt -Encoding ascii
+
+      - name: Publish versioned GitHub release
+        shell: pwsh
+        run: |
+          $releaseArgs = @(
+            "release", "create", $env:GITHUB_REF_NAME,
+            "dist/GTAModAssistant-Portable-win-x64.exe",
+            "dist/GTAModAssistant-Setup-win-x64.exe",
+            "dist/SHA256SUMS.txt",
+            "--verify-tag",
+            "--title", "GTA Mod Assistant $env:GITHUB_REF_NAME",
+            "--generate-notes"
+          )
+          if ($env:GITHUB_REF_NAME.Contains("-")) {
+            $releaseArgs += "--prerelease"
+          }
+          & gh @releaseArgs
+          if ($LASTEXITCODE -ne 0) { throw "GitHub release publishing failed." }

@@ -6,6 +6,7 @@
       - Updates Directory.Build.props so the app's green header badge shows the new version
       - Auto-generates a commit summary from changed files if you don't type a note
       - Commits, tags, and pushes to the configured GitHub source repository
+      - The version tag triggers GitHub Actions to test, build, and publish the release downloads
 #>
 
 param(
@@ -46,6 +47,7 @@ try {
     git push origin main --follow-tags
 
     Write-Host "`n[SAVED] Version $NextTag committed and tagged in the configured source repo!" -ForegroundColor Green
+    Write-Host "  GitHub Actions will test the code, build the downloads, and publish the release page." -ForegroundColor Cyan
     Write-Host "  Note: $Note" -ForegroundColor Cyan
     Write-Host "  To view or roll back to this exact code anytime later: git checkout $NextTag" -ForegroundColor DarkGray
 }
