@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text;
+using System.Xml;
 using GTAModAssistant.Core.Archives;
 using GTAModAssistant.Core.Models;
 using GTAModAssistant.Core.Security;
@@ -520,11 +521,16 @@ public sealed class MainViewModel : ObservableObject
                 mod.VerificationState == InstallVerificationState.PendingOpenIvCommit &&
                 !string.IsNullOrWhiteSpace(mod.GeneratedOivPath) &&
                 File.Exists(mod.GeneratedOivPath))
+            .OrderByDescending(mod => mod.InstalledAtUtc)
             .ToList();
 
         foreach (var mod in pendingMods)
         {
             await CommitOpenIvPackageAsync(mod);
+            if (_repository.GetInstalledModById(mod.Id)?.VerificationState == InstallVerificationState.PendingOpenIvCommit)
+            {
+                break;
+            }
         }
     }
 
@@ -1079,6 +1085,8 @@ public sealed class MainViewModel : ObservableObject
         UpdateProgress(40, "Installing Encrypted RPF Automatically", $"Applying '{Path.GetFileName(target.GeneratedOivPath)}' in the background...");
         try
         {
+            OivPackageService.EnsureGeneratedPackageDescriptionUsesCData(target.GeneratedOivPath);
+
             var rpfTargets = _repository.GetModFiles(target.Id)
                 .Where(f => !string.IsNullOrWhiteSpace(f.RpfContainerRelativePath))
                 .Select(f => PathSafetyGuard.ResolveSafeChildPath(GameEnv.GtaRootPath, f.RpfContainerRelativePath))
@@ -1106,6 +1114,13 @@ public sealed class MainViewModel : ObservableObject
                 SetBanner(StatusBannerSeverity.Warning, verify.Details);
                 UpdateProgress(0, "Pending OpenIV Commit", verify.Details);
             }
+        }
+        catch (Exception ex) when (ex is IOException or XmlException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            string details = $"Could not prepare the generated OpenIV package: {ex.Message}";
+            _repository.AppendLog(AuditLogLevel.Warning, "OpenIV", $"Unable to prepare package for '{target.Name}'", details);
+            SetBanner(StatusBannerSeverity.Warning, details);
+            UpdateProgress(0, "Pending OpenIV Commit", details);
         }
         finally
         {

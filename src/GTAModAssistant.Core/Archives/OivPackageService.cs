@@ -38,6 +38,55 @@ public interface IOpenIvPackageInstallerAutomation
 
 public static class OivPackageService
 {
+    public static bool EnsureGeneratedPackageDescriptionUsesCData(string oivPackagePath)
+    {
+        using var packageStream = new FileStream(
+            oivPackagePath,
+            FileMode.Open,
+            FileAccess.ReadWrite,
+            FileShare.None);
+        using var package = new ZipArchive(packageStream, ZipArchiveMode.Update);
+
+        var assemblyEntry = package.Entries.FirstOrDefault(entry =>
+            string.Equals(entry.FullName, "assembly.xml", StringComparison.OrdinalIgnoreCase))
+            ?? throw new InvalidDataException("Generated .oiv package is missing assembly.xml.");
+        XDocument assemblyDocument;
+        using (var assemblyStream = assemblyEntry.Open())
+        using (var reader = XmlReader.Create(assemblyStream, new XmlReaderSettings
+        {
+            DtdProcessing = DtdProcessing.Prohibit,
+            XmlResolver = null
+        }))
+        {
+            assemblyDocument = XDocument.Load(reader);
+        }
+
+        var description = assemblyDocument.Root?.Element("metadata")?.Element("description")
+            ?? throw new InvalidDataException("Generated .oiv package metadata is missing its description.");
+        if (description.Nodes().Count() == 1 && description.FirstNode is XCData)
+        {
+            return false;
+        }
+
+        string entryName = assemblyEntry.FullName;
+        string descriptionText = description.Value;
+        description.ReplaceNodes(new XCData(descriptionText));
+        assemblyEntry.Delete();
+
+        var repairedAssemblyEntry = package.CreateEntry(entryName, CompressionLevel.Optimal);
+        using (var assemblyStream = repairedAssemblyEntry.Open())
+        using (var writer = XmlWriter.Create(assemblyStream, new XmlWriterSettings
+        {
+            Indent = true,
+            Encoding = new UTF8Encoding(false)
+        }))
+        {
+            assemblyDocument.Save(writer);
+        }
+
+        return true;
+    }
+
     public static ParsedOivMetadata ParseExtractedOivDirectory(string stagingDir)
     {
         string assemblyXmlPath = Directory.EnumerateFiles(stagingDir, "assembly.xml", SearchOption.AllDirectories)

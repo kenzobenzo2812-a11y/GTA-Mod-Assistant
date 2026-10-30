@@ -1,4 +1,4 @@
-# GTA Mod Assistant (v1.2.7)
+# GTA Mod Assistant (v1.2.8)
 
 An AI-powered **Windows Desktop Application (C# / .NET 8 / WPF)** that analyzes, plans, previews, backs up, installs, verifies, manages profiles for, and cleanly rolls back **GTA V Single-Player mods** — supporting **Epic Games, Steam, and Rockstar Games Launcher GTA V**, **OpenIV** (`%LOCALAPPDATA%\New Technology Studio\Apps\OpenIV\OpenIV.exe`), **RPF7 binary containers**, **RAGE `.yft` / `_hi.yft` / `.ytd` / `+hi.ytd` assets**, and safe `mods\` folder isolation.
 

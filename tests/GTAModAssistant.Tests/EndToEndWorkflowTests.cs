@@ -255,7 +255,10 @@ public sealed class EndToEndWorkflowTests
             var repo = new SqliteHistoryRepository(appPaths.DatabasePath);
             string packagePath = Path.Combine(appPaths.RootDataDirectory, "generated_oiv", "pending.oiv");
             Directory.CreateDirectory(Path.GetDirectoryName(packagePath)!);
-            File.WriteAllBytes(packagePath, Array.Empty<byte>());
+            SyntheticGtaFixture.CreateZipArchive(
+                packagePath,
+                ("assembly.xml", Encoding.UTF8.GetBytes("<package version=\"2.1\" id=\"{00000000-0000-0000-0000-000000000001}\" target=\"Five\"><metadata><description>Legacy generated package</description></metadata><content /></package>")),
+                ("content/payload.bin", Encoding.UTF8.GetBytes("payload")));
 
             const string modId = "pending-openiv-mod";
             repo.SaveInstalledMod(
@@ -298,6 +301,88 @@ public sealed class EndToEndWorkflowTests
             Assert.Equal(
                 InstallVerificationState.VerifiedComplete,
                 vm.Repository.GetInstalledModById(modId)!.VerificationState);
+            var extractor = new ArchiveExtractorService();
+            var repairedOiv = extractor.StageInput(packagePath, Path.Combine(tempDir, "repaired_oiv_check"));
+            string repairedAssembly = Directory.EnumerateFiles(repairedOiv.StagingDirectory, "assembly.xml", SearchOption.AllDirectories).Single();
+            var repairedDocument = XDocument.Load(repairedAssembly);
+            Assert.IsType<XCData>(repairedDocument.Root!.Element("metadata")!.Element("description")!.FirstNode);
+        }
+        finally
+        {
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
+        }
+    }
+
+    [Fact]
+    public async Task StartupScan_StopsRetryingPendingOpenIvPackagesAfterFirstFailure()
+    {
+        string tempDir = SyntheticGtaFixture.CreateTempDirectory();
+        try
+        {
+            var (gtaRoot, openIvExe) = SyntheticGtaFixture.CreateSyntheticEpicGtaEnvironment(tempDir, openUpdateRpf: false);
+            string rpfRelativePath = "mods/update/update.rpf";
+            string rpfPath = Path.Combine(gtaRoot, "mods", "update", "update.rpf");
+            Directory.CreateDirectory(Path.GetDirectoryName(rpfPath)!);
+            Rpf7Archive.CreateNewOpenArchive().SaveAndVerify(rpfPath);
+
+            var appPaths = new AppWorkspacePaths(Path.Combine(tempDir, "appdata"));
+            var repo = new SqliteHistoryRepository(appPaths.DatabasePath);
+            var installTime = DateTimeOffset.UtcNow;
+            foreach (var mod in new[]
+            {
+                (Id: "older-pending-mod", InstalledAt: installTime.AddMinutes(-1)),
+                (Id: "newest-pending-mod", InstalledAt: installTime)
+            })
+            {
+                string packagePath = Path.Combine(appPaths.RootDataDirectory, "generated_oiv", $"{mod.Id}.oiv");
+                Directory.CreateDirectory(Path.GetDirectoryName(packagePath)!);
+                SyntheticGtaFixture.CreateZipArchive(
+                    packagePath,
+                    ("assembly.xml", Encoding.UTF8.GetBytes("<package version=\"2.1\" id=\"{00000000-0000-0000-0000-000000000001}\" target=\"Five\"><metadata><description>Legacy generated package</description></metadata><content /></package>")));
+                repo.SaveInstalledMod(
+                    new InstalledModRecord
+                    {
+                        Id = mod.Id,
+                        Slug = mod.Id,
+                        Name = mod.Id,
+                        SourcePath = $"{mod.Id}.zip",
+                        Category = ModCategory.DataOrConfigMod,
+                        VerificationState = InstallVerificationState.PendingOpenIvCommit,
+                        GeneratedOivPath = packagePath,
+                        InstalledAtUtc = mod.InstalledAt
+                    },
+                    new[]
+                    {
+                        new InstalledModFileRecord
+                        {
+                            ModId = mod.Id,
+                            Operation = InstallOperationKind.RegisterDlcListEntry,
+                            TargetRelativePath = rpfRelativePath,
+                            RpfContainerRelativePath = rpfRelativePath,
+                            DlcListEntry = $"dlcpacks:/{mod.Id}/"
+                        }
+                    });
+            }
+
+            var automation = new FakeOpenIvPackageInstallerAutomation(rpfPath, complete: false);
+            var vm = new MainViewModel(
+                appPaths,
+                new FakeUserInteractionService(),
+                openIvPackageInstallerAutomation: automation)
+            {
+                CustomGtaPathOverride = gtaRoot,
+                CustomOpenIvOverride = openIvExe
+            };
+
+            await vm.ScanGameAsync();
+
+            Assert.Equal(1, automation.Calls);
+            Assert.Equal(
+                InstallVerificationState.PendingOpenIvCommit,
+                vm.Repository.GetInstalledModById("newest-pending-mod")!.VerificationState);
+            Assert.Equal(
+                InstallVerificationState.PendingOpenIvCommit,
+                vm.Repository.GetInstalledModById("older-pending-mod")!.VerificationState);
         }
         finally
         {
@@ -484,7 +569,7 @@ public sealed class EndToEndWorkflowTests
         public void ShowNotification(string title, string message, bool isError = false) { }
     }
 
-    private sealed class FakeOpenIvPackageInstallerAutomation(string targetRpfPath) : IOpenIvPackageInstallerAutomation
+    private sealed class FakeOpenIvPackageInstallerAutomation(string targetRpfPath, bool complete = true) : IOpenIvPackageInstallerAutomation
     {
         public int Calls { get; private set; }
 
@@ -495,6 +580,11 @@ public sealed class EndToEndWorkflowTests
             CancellationToken cancellationToken = default)
         {
             Calls++;
+            if (!complete)
+            {
+                return Task.FromResult(new OpenIvAutomationResult(false, "Test installer failure."));
+            }
+
             var archive = Rpf7Archive.CreateNewOpenArchive();
             archive.PutFile("common/data/installed.xml", Encoding.UTF8.GetBytes("<Installed />"));
             archive.SaveAndVerify(targetRpfPath);

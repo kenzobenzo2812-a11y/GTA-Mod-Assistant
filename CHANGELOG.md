@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.8
+- **Repair pending package metadata:** Startup recovery upgrades previously generated `.oiv` descriptions to OpenIV's required CDATA format before retrying them.
+- **Prevent repeated installer windows:** Startup retries the newest pending package first and stops after the first unsuccessful commit instead of launching every pending installer.
+
 ## v1.2.7
 - **Fix OpenIV package metadata:** Generated `.oiv` descriptions are now written as CDATA, as required by OpenIV's 2.1 package metadata parser.
 
