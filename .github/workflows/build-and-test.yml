@@ -85,7 +85,9 @@ jobs:
             -o publish-setup
           if ($LASTEXITCODE -ne 0) { throw "CLI installer payload publish failed." }
 
-          makensis /DPUBLISH_DIR="publish-setup" /DAPP_ICON_PATH="src\GTAModAssistant.App\Assets\app.ico" /DOUTPUT_SETUP_EXE="dist\GTAModAssistant-Setup-win-x64.exe" installer\GTAModAssistant.nsi
+          $makensis = Join-Path ${env:ProgramFiles(x86)} "NSIS\makensis.exe"
+          if (-not (Test-Path $makensis)) { throw "NSIS was installed but makensis.exe was not found at $makensis." }
+          & $makensis /DPUBLISH_DIR="publish-setup" /DAPP_ICON_PATH="src\GTAModAssistant.App\Assets\app.ico" /DOUTPUT_SETUP_EXE="dist\GTAModAssistant-Setup-win-x64.exe" installer\GTAModAssistant.nsi
           if ($LASTEXITCODE -ne 0) { throw "NSIS installer build failed." }
 
       - name: Generate SHA-256 checksums
