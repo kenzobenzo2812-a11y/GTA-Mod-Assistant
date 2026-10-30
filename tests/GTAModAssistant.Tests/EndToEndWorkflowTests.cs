@@ -252,8 +252,12 @@ public sealed class EndToEndWorkflowTests
             // Switch back to Default Single-Player profile -> EnhancedCam.asi MUST reappear automatically!
             var defaultProfile = vm.Profiles.Single(p => p.Id == "default");
             vm.SelectedProfile = defaultProfile;
-            // Allow async profile switch task triggered by property setter to complete
-            await Task.Delay(250);
+            DateTime switchTimeout = DateTime.UtcNow.AddSeconds(5);
+            while (vm.IsBusy && DateTime.UtcNow < switchTimeout)
+            {
+                await Task.Delay(10);
+            }
+            Assert.False(vm.IsBusy, "Profile switching did not complete before the test timed out.");
             Assert.True(File.Exists(deployedAsi));
             Assert.Equal("ASI_CAMERA_MOD_V1", File.ReadAllText(deployedAsi));
         }
