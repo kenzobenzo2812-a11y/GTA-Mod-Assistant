@@ -25,6 +25,17 @@ public sealed record OpenIvCommitVerification(
     string Details,
     IReadOnlyDictionary<string, string> PostHashes);
 
+public sealed record OpenIvAutomationResult(bool Completed, string Details);
+
+public interface IOpenIvPackageInstallerAutomation
+{
+    Task<OpenIvAutomationResult> InstallAsync(
+        string openIvExePath,
+        string oivPackagePath,
+        string expectedPackageName,
+        CancellationToken cancellationToken = default);
+}
+
 public static class OivPackageService
 {
     public static ParsedOivMetadata ParseExtractedOivDirectory(string stagingDir)
@@ -350,7 +361,9 @@ public static class OivPackageService
         string openIvExePath,
         string oivPackagePath,
         IEnumerable<string> targetModsRpfFullPaths,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IOpenIvPackageInstallerAutomation? installerAutomation = null,
+        string expectedPackageName = "")
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -378,21 +391,36 @@ public static class OivPackageService
             }
         }
 
-        var psi = new ProcessStartInfo
+        string? automationDetails = null;
+        if (installerAutomation is not null)
         {
-            FileName = openIvExePath,
-            UseShellExecute = false,
-            WorkingDirectory = Path.GetDirectoryName(openIvExePath) ?? string.Empty
-        };
-        psi.ArgumentList.Add(oivPackagePath);
-
-        using var proc = Process.Start(psi);
-        if (proc is null)
-        {
-            return new OpenIvCommitVerification(false, "Failed to start OpenIV.exe process.", preHashes);
+            var automationResult = await installerAutomation.InstallAsync(
+                openIvExePath,
+                oivPackagePath,
+                expectedPackageName,
+                cancellationToken);
+            automationDetails = automationResult.Completed
+                ? automationResult.Details
+                : $"Automatic OpenIV installation did not complete: {automationResult.Details}";
         }
+        else
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = openIvExePath,
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(openIvExePath) ?? string.Empty
+            };
+            psi.ArgumentList.Add(oivPackagePath);
 
-        await proc.WaitForExitAsync(cancellationToken);
+            using var proc = Process.Start(psi);
+            if (proc is null)
+            {
+                return new OpenIvCommitVerification(false, "Failed to start OpenIV.exe process.", preHashes);
+            }
+
+            await proc.WaitForExitAsync(cancellationToken);
+        }
 
         var postHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         bool anyModifiedAndValid = false;
@@ -414,13 +442,17 @@ public static class OivPackageService
         {
             return new OpenIvCommitVerification(
                 false,
-                "OpenIV closed without modifying target mods/*.rpf archives (installation in OpenIV may have been cancelled).",
+                automationDetails is null
+                    ? "OpenIV closed without modifying target mods/*.rpf archives (installation in OpenIV may have been cancelled)."
+                    : $"{automationDetails} No target mods/*.rpf archive change was verified.",
                 postHashes);
         }
 
         return new OpenIvCommitVerification(
             true,
-            "Verified post-OpenIV SHA-256 modification and valid RPF7 header on target mods archive(s).",
+            automationDetails is null
+                ? "Verified post-OpenIV SHA-256 modification and valid RPF7 header on target mods archive(s)."
+                : $"Verified post-OpenIV SHA-256 modification and valid RPF7 header on target mods archive(s). {automationDetails}",
             postHashes);
     }
 

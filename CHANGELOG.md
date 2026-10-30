@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.2.5
+- **Hands-free OpenIV package install:** The app now advances through recognized OpenIV installer steps, selects the `mods` folder target, and starts installation automatically for encrypted RPF packages. It still verifies the resulting archive and leaves unsupported installer layouts pending rather than clicking blindly.
+
 ## v1.2.4
 - **Install readiness feedback:** The app now explains when Install is unavailable because GTA V is not detected or no install steps are selected, and refreshes the status as those conditions change.
 

@@ -11,14 +11,17 @@ public sealed class ModInstallerService
     private readonly BackupService _backupService;
     private readonly string _stashRootDirectory;
     private readonly string _generatedOivDirectory;
+    private readonly IOpenIvPackageInstallerAutomation? _openIvPackageInstallerAutomation;
 
     public ModInstallerService(
         SqliteHistoryRepository repository,
         BackupService backupService,
-        string appDataDirectory)
+        string appDataDirectory,
+        IOpenIvPackageInstallerAutomation? openIvPackageInstallerAutomation = null)
     {
         _repository = repository;
         _backupService = backupService;
+        _openIvPackageInstallerAutomation = openIvPackageInstallerAutomation;
         _stashRootDirectory = Path.Combine(appDataDirectory, "conflict_stash");
         _generatedOivDirectory = Path.Combine(appDataDirectory, "generated_oiv");
         Directory.CreateDirectory(_stashRootDirectory);
@@ -423,7 +426,9 @@ public sealed class ModInstallerService
                         gameEnv.OpenIvExecutablePath,
                         generatedOivPath,
                         targetRpfFulls,
-                        cancellationToken);
+                        cancellationToken,
+                        _openIvPackageInstallerAutomation,
+                        plan.ModName);
 
                     if (oivVerify.VerifiedChanged)
                     {

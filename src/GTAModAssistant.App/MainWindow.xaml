@@ -689,7 +689,7 @@
                             <Run Text="{Binding HasConfiguredApiKey, Mode=OneWay}" FontWeight="Bold" />
                         </TextBlock>
 
-                        <CheckBox Content="Automatically launch OpenIV Package Installer (.oiv) when target RPF7 uses Rockstar NG encryption"
+                        <CheckBox Content="Automatically install encrypted RPF packages in OpenIV (select mods folder and click Install)"
                                   IsChecked="{Binding AutoLaunchOpenIvOnEncryptedRpf}"
                                   Margin="0,0,0,20" />
 

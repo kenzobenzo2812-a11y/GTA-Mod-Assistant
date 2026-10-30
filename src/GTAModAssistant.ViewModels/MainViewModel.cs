@@ -38,6 +38,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly SafeCleanupService _cleanupService;
     private readonly IUserInteractionService _interaction;
     private readonly Action<Action> _uiDispatch;
+    private readonly IOpenIvPackageInstallerAutomation? _openIvPackageInstallerAutomation;
 
     private WorkspaceTab _selectedTab = WorkspaceTab.AnalyzerAndPlan;
     private GameEnvironmentInfo _gameEnv = new();
@@ -123,18 +124,24 @@ public sealed class MainViewModel : ObservableObject
         AppWorkspacePaths paths,
         IUserInteractionService interaction,
         Action<Action>? uiDispatch = null,
-        HttpClient? httpClient = null)
+        HttpClient? httpClient = null,
+        IOpenIvPackageInstallerAutomation? openIvPackageInstallerAutomation = null)
     {
         _paths = paths;
         _interaction = interaction;
         _uiDispatch = uiDispatch ?? (a => a());
+        _openIvPackageInstallerAutomation = openIvPackageInstallerAutomation;
 
         _repository = new SqliteHistoryRepository(_paths.DatabasePath);
         _secretStore = new SecretStore(_paths.RootDataDirectory);
         _gameDetection = new GameDetectionService();
         _aiAnalyzer = new AiModAnalyzerService(new ArchiveExtractorService(), _secretStore, httpClient);
         _backupService = new BackupService(_paths.BackupsDirectory, _repository);
-        _installer = new ModInstallerService(_repository, _backupService, _paths.RootDataDirectory);
+        _installer = new ModInstallerService(
+            _repository,
+            _backupService,
+            _paths.RootDataDirectory,
+            openIvPackageInstallerAutomation);
         _profileManager = new ProfileManagerService(_repository, _backupService, _paths.RootDataDirectory);
         _cleanupService = new SafeCleanupService(_paths, _repository);
 
@@ -1051,7 +1058,9 @@ public sealed class MainViewModel : ObservableObject
             var verify = await OivPackageService.LaunchOpenIvAndVerifyAsync(
                 GameEnv.OpenIvExecutablePath,
                 target.GeneratedOivPath,
-                rpfTargets);
+                rpfTargets,
+                installerAutomation: _openIvPackageInstallerAutomation,
+                expectedPackageName: target.Name);
 
             if (verify.VerifiedChanged)
             {

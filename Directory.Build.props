@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <VersionPrefix>1.2</VersionPrefix>
-    <Version>1.2.4</Version>
+    <Version>1.2.5</Version>
     <Authors>GTA Mod Assistant</Authors>
     <Company>GTA Mod Assistant</Company>
     <Product>GTA Mod Assistant</Product>

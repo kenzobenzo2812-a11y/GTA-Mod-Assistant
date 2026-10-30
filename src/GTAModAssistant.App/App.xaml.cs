@@ -26,7 +26,8 @@ public partial class App : Application
                 {
                     Dispatcher.Invoke(action);
                 }
-            });
+            },
+            openIvPackageInstallerAutomation: new OpenIvPackageInstallerAutomation());
 
         DispatcherUnhandledException += (_, args) =>
         {
