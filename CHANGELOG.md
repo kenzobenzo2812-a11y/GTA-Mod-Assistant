@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.2.7
+- **Fix OpenIV package metadata:** Generated `.oiv` descriptions are now written as CDATA, as required by OpenIV's 2.1 package metadata parser.
+
 ## v1.2.6
 - **Background OpenIV launch:** OpenIV now starts hidden and directly targets GTA V without showing the game picker. UI Automation runs with a hard timeout so an unresponsive OpenIV window cannot leave the app stuck at “Waiting for OpenIV.”
 - **Automatic pending-install recovery:** On startup, the app retries eligible encrypted-RPF packages left pending from an earlier run, without requiring the user to click “Commit .OIV.”

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Xml.Linq;
 using Xunit;
 using GTAModAssistant.Core.Archives;
 using GTAModAssistant.Core.Models;
@@ -225,6 +226,9 @@ public sealed class EndToEndWorkflowTests
             var stagedOiv = extractor.StageInput(res.GeneratedOivPackagePath!, Path.Combine(tempDir, "oiv_check"));
             var parsedOiv = OivPackageService.ParseExtractedOivDirectory(stagedOiv.StagingDirectory);
             Assert.Contains(parsedOiv.ExtractedSteps, s => s.DlcListEntry == "dlcpacks:/nsx2017/");
+            string assemblyXmlPath = Directory.EnumerateFiles(stagedOiv.StagingDirectory, "assembly.xml", SearchOption.AllDirectories).Single();
+            var assemblyDocument = XDocument.Load(assemblyXmlPath);
+            Assert.IsType<XCData>(assemblyDocument.Root!.Element("metadata")!.Element("description")!.FirstNode);
         }
         finally
         {
