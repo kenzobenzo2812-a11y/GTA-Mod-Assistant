@@ -1,6 +1,7 @@
 # Changelog
 
 ## v1.2.0-beta
+- **Safe Memory & Modding Junk Cleaner:** Dedicated **Memory & Junk Cleanup** tab that cleans leftover mod staging caches, orphaned uninstalled mod stashes, large GTA V / OpenIV `.dmp` crash dumps, stale `%TEMP%` archive remnants, SQLite WAL bloat, and trims idle user-space RAM working sets — while strictly protecting `mods\`, installed mods, active backups, and Windows boot/system memory settings.
 - **No-README Disclaimer & AI Deep File Analysis:** Automatically detects mods packaged without a README, warns about missing author notes, and inspects raw `dlc.rpf` (`setup2.xml`/`content.xml`), `RSC7` (`.yft`/`_hi.yft`/`.ytd`), `.meta` `<modelName>` spawn names, and PE script headers.
 - **Clear Auto-Mapped Target Status:** Distinguished `Auto-Mapped` paths from optional `Override RPF...` and uncertain `Choose RPF...` steps.
 - **Multi-Platform Auto-Detection:** Automatic GTA V discovery across Epic Games, Steam (`libraryfolders.vdf`), and Rockstar Games Launcher across all drives.
