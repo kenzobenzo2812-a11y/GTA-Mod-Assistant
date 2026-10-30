@@ -47,6 +47,7 @@ public sealed class MainViewModel : ObservableObject
     private BackupRecord? _selectedBackup;
     private ModProfile? _selectedProfile;
     private bool _suppressProfileSwitchEvent;
+    private bool _attemptedPendingOpenIvRecovery;
 
     private bool _isBusy;
     private int _progressPercentage;
@@ -453,6 +454,7 @@ public sealed class MainViewModel : ObservableObject
 
     public async Task ScanGameAsync()
     {
+        bool resumePendingOpenIvCommits = false;
         IsBusy = true;
         UpdateProgress(35, "Scanning Environment", "Detecting Epic Games GTA V, game build, OpenIV, and mods folder...");
         try
@@ -480,6 +482,12 @@ public sealed class MainViewModel : ObservableObject
                     info.HealthWarnings.Count == 0 ? StatusBannerSeverity.Verified : StatusBannerSeverity.Warning,
                     $"Detected {info.SummaryLine} at {info.GtaRootPath}");
                 UpdateProgress(100, "Scan Verified", info.SummaryLine);
+
+                if (info.OpenIvInstalled && AutoLaunchOpenIvOnEncryptedRpf && !_attemptedPendingOpenIvRecovery)
+                {
+                    _attemptedPendingOpenIvRecovery = true;
+                    resumePendingOpenIvCommits = true;
+                }
             }
             else
             {
@@ -497,6 +505,26 @@ public sealed class MainViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+        }
+
+        if (resumePendingOpenIvCommits)
+        {
+            await ResumePendingOpenIvCommitsAsync();
+        }
+    }
+
+    private async Task ResumePendingOpenIvCommitsAsync()
+    {
+        var pendingMods = _repository.GetInstalledMods()
+            .Where(mod =>
+                mod.VerificationState == InstallVerificationState.PendingOpenIvCommit &&
+                !string.IsNullOrWhiteSpace(mod.GeneratedOivPath) &&
+                File.Exists(mod.GeneratedOivPath))
+            .ToList();
+
+        foreach (var mod in pendingMods)
+        {
+            await CommitOpenIvPackageAsync(mod);
         }
     }
 
@@ -748,6 +776,7 @@ public sealed class MainViewModel : ObservableObject
 
         IsBusy = true;
         PlanStatusHeadline = "INSTALLING MOD INTO GTA V 'mods\\' FOLDER...";
+        SetBanner(StatusBannerSeverity.Info, $"Installing '{CurrentPlan.ModName}'. Encrypted RPF steps are handled automatically.");
         var progress = new Progress<InstallProgressReport>(p => UpdateProgress(p.Percentage, p.Stage, p.Detail));
 
         try
@@ -772,9 +801,9 @@ public sealed class MainViewModel : ObservableObject
             }
             else if (result.VerificationState == InstallVerificationState.PendingOpenIvCommit)
             {
-                PlanStatusHeadline = "ALMOST DONE — CLICK 'INSTALL' IN OPENIV PACKAGE INSTALLER TO FINISH ENCRYPTED RPF";
+                PlanStatusHeadline = "AUTOMATIC OPENIV INSTALL DID NOT COMPLETE — ENCRYPTED RPF CHANGES REMAIN PENDING";
                 SetBanner(StatusBannerSeverity.Warning, result.SummaryMessage);
-                UpdateProgress(95, "Waiting for OpenIV Commit", result.SummaryMessage);
+                UpdateProgress(0, "OpenIV Automation Incomplete", result.SummaryMessage);
             }
             else
             {
@@ -1046,7 +1075,8 @@ public sealed class MainViewModel : ObservableObject
         }
 
         IsBusy = true;
-        UpdateProgress(40, "Launching OpenIV", $"Opening '{Path.GetFileName(target.GeneratedOivPath)}' in OpenIV Package Installer...");
+        SetBanner(StatusBannerSeverity.Info, $"Installing '{target.Name}' encrypted RPF changes automatically.");
+        UpdateProgress(40, "Installing Encrypted RPF Automatically", $"Applying '{Path.GetFileName(target.GeneratedOivPath)}' in the background...");
         try
         {
             var rpfTargets = _repository.GetModFiles(target.Id)

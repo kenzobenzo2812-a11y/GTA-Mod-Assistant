@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.2.6
+- **Background OpenIV launch:** OpenIV now starts hidden and directly targets GTA V without showing the game picker. UI Automation runs with a hard timeout so an unresponsive OpenIV window cannot leave the app stuck at “Waiting for OpenIV.”
+- **Automatic pending-install recovery:** On startup, the app retries eligible encrypted-RPF packages left pending from an earlier run, without requiring the user to click “Commit .OIV.”
+- **Clear install completion state:** Starting a new install clears stale warning banners, and an unsuccessful automatic commit now ends in an explicit pending state instead of looking like an endless install.
+
 ## v1.2.5
 - **Hands-free OpenIV package install:** The app now advances through recognized OpenIV installer steps, selects the `mods` folder target, and starts installation automatically for encrypted RPF packages. It still verifies the resulting archive and leaves unsupported installer layouts pending rather than clicking blindly.
 

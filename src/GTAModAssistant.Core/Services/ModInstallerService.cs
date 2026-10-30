@@ -415,7 +415,10 @@ public sealed class ModInstallerService
 
                 if (autoLaunchOpenIvForEncryptedRpfs && gameEnv.OpenIvInstalled)
                 {
-                    progress?.Report(new InstallProgressReport(92, "Waiting for OpenIV", "Running OpenIV Package Installer and verifying mods/*.rpf commit..."));
+                    progress?.Report(new InstallProgressReport(
+                        92,
+                        "Installing Encrypted RPF Automatically",
+                        "OpenIV is running in the background; no clicks are needed while the package is verified."));
                     var targetRpfFulls = deferredEncryptedRpfSteps
                         .Select(s => PathSafetyGuard.ResolveSafeChildPath(
                             gameEnv.GtaRootPath,

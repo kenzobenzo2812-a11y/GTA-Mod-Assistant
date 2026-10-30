@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Automation;
 using GTAModAssistant.Core.Archives;
 
@@ -9,6 +10,9 @@ namespace GTAModAssistant.App;
 public sealed class OpenIvPackageInstallerAutomation : IOpenIvPackageInstallerAutomation
 {
     private static readonly TimeSpan InstallerTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan InstallerDiscoveryTimeout = TimeSpan.FromSeconds(90);
+    private static readonly TimeSpan AutomationQueryTimeout = TimeSpan.FromSeconds(5);
+    private static readonly SemaphoreSlim AutomationQueryGate = new(1, 1);
 
     public async Task<OpenIvAutomationResult> InstallAsync(
         string openIvExePath,
@@ -32,8 +36,11 @@ public sealed class OpenIvPackageInstallerAutomation : IOpenIvPackageInstallerAu
             {
                 FileName = openIvExePath,
                 UseShellExecute = false,
+                WindowStyle = ProcessWindowStyle.Hidden,
                 WorkingDirectory = Path.GetDirectoryName(openIvExePath) ?? string.Empty
             };
+            startInfo.ArgumentList.Add("-core.game.select:false");
+            startInfo.ArgumentList.Add("-core.game:Five");
             startInfo.ArgumentList.Add(oivPackagePath);
 
             using var process = Process.Start(startInfo);
@@ -42,15 +49,23 @@ public sealed class OpenIvPackageInstallerAutomation : IOpenIvPackageInstallerAu
                 return new OpenIvAutomationResult(false, "OpenIV could not be started.");
             }
 
-            var deadline = DateTime.UtcNow + InstallerTimeout;
+            var discoveryDeadline = DateTime.UtcNow + InstallerDiscoveryTimeout;
             AutomationElement? installerWindow = null;
             AutomationElement[] controls = Array.Empty<AutomationElement>();
             string processName = Path.GetFileNameWithoutExtension(openIvExePath);
 
-            while (DateTime.UtcNow < deadline)
+            while (DateTime.UtcNow < discoveryDeadline)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                installerWindow = FindPackageInstallerWindow(process.Id, processName, expectedPackageName, out controls);
+                var openIvProcessIds = GetOpenIvProcessIds(process.Id, processName);
+                HideOpenIvWindows(openIvProcessIds);
+
+                var scan = await FindPackageInstallerWindowAsync(
+                    openIvProcessIds,
+                    expectedPackageName,
+                    cancellationToken);
+                installerWindow = scan.Window;
+                controls = scan.Controls;
                 if (installerWindow is not null)
                 {
                     break;
@@ -66,6 +81,7 @@ public sealed class OpenIvPackageInstallerAutomation : IOpenIvPackageInstallerAu
                     "OpenIV's package installer could not be identified safely; no buttons were clicked.");
             }
 
+            var installDeadline = DateTime.UtcNow + InstallerTimeout;
             bool modsTargetSelected = false;
             bool installInvoked = false;
             for (int step = 0; step < 4; step++)
@@ -105,7 +121,12 @@ public sealed class OpenIvPackageInstallerAutomation : IOpenIvPackageInstallerAu
                 }
 
                 await Task.Delay(500, cancellationToken);
-                installerWindow = FindPackageInstallerWindow(process.Id, processName, expectedPackageName, out controls);
+                var scan = await FindPackageInstallerWindowAsync(
+                    GetOpenIvProcessIds(process.Id, processName),
+                    expectedPackageName,
+                    cancellationToken);
+                installerWindow = scan.Window;
+                controls = scan.Controls;
                 if (installerWindow is null)
                 {
                     return new OpenIvAutomationResult(
@@ -121,10 +142,15 @@ public sealed class OpenIvPackageInstallerAutomation : IOpenIvPackageInstallerAu
                     "OpenIV's package installer did not reach a verified Install step; installation was not started.");
             }
 
-            while (DateTime.UtcNow < deadline)
+            while (DateTime.UtcNow < installDeadline)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                installerWindow = FindPackageInstallerWindow(process.Id, processName, expectedPackageName, out controls);
+                var scan = await FindPackageInstallerWindowAsync(
+                    GetOpenIvProcessIds(process.Id, processName),
+                    expectedPackageName,
+                    cancellationToken);
+                installerWindow = scan.Window;
+                controls = scan.Controls;
                 if (installerWindow is null)
                 {
                     return new OpenIvAutomationResult(true, "OpenIV installed the package without further user input.");
@@ -155,37 +181,72 @@ public sealed class OpenIvPackageInstallerAutomation : IOpenIvPackageInstallerAu
         {
             return new OpenIvAutomationResult(false, $"Windows could not access OpenIV's installer controls: {ex.Message}");
         }
+        catch (TimeoutException ex)
+        {
+            return new OpenIvAutomationResult(false, $"OpenIV's installer UI did not respond to automation in time: {ex.Message}");
+        }
     }
 
-    private static AutomationElement? FindPackageInstallerWindow(
-        int processId,
-        string processName,
+    private static async Task<(AutomationElement? Window, AutomationElement[] Controls)> FindPackageInstallerWindowAsync(
+        HashSet<int> processIds,
         string expectedPackageName,
-        out AutomationElement[] controls)
+        CancellationToken cancellationToken)
     {
-        controls = Array.Empty<AutomationElement>();
-        var processIds = new HashSet<int> { processId };
-        foreach (Process openIvProcess in Process.GetProcessesByName(processName))
+        if (!await AutomationQueryGate.WaitAsync(AutomationQueryTimeout, cancellationToken))
         {
-            using (openIvProcess)
-            {
-                processIds.Add(openIvProcess.Id);
-            }
+            throw new TimeoutException("An earlier OpenIV accessibility request is still blocked.");
         }
 
-        var topLevelWindows = AutomationElement.RootElement.FindAll(TreeScope.Children, Condition.TrueCondition);
-
-        foreach (AutomationElement window in topLevelWindows)
+        var completion = new TaskCompletionSource<(AutomationElement? Window, AutomationElement[] Controls)>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
         {
-            if (!processIds.Contains(window.Current.ProcessId))
+            try
             {
-                continue;
+                completion.TrySetResult(FindPackageInstallerWindow(processIds, expectedPackageName));
             }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+            finally
+            {
+                AutomationQueryGate.Release();
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "OpenIV UI Automation"
+        };
+        thread.SetApartmentState(ApartmentState.MTA);
+        try
+        {
+            thread.Start();
+        }
+        catch
+        {
+            AutomationQueryGate.Release();
+            throw;
+        }
 
-            string title = window.Current.Name;
-            if (!title.Contains("OpenIV", StringComparison.OrdinalIgnoreCase) &&
-                !title.Contains("Package", StringComparison.OrdinalIgnoreCase) &&
-                !title.Contains("Installer", StringComparison.OrdinalIgnoreCase))
+        return await completion.Task.WaitAsync(AutomationQueryTimeout, cancellationToken);
+    }
+
+    private static (AutomationElement? Window, AutomationElement[] Controls) FindPackageInstallerWindow(
+        HashSet<int> processIds,
+        string expectedPackageName)
+    {
+        foreach (var nativeWindow in EnumerateTopLevelWindows(processIds))
+        {
+            AutomationElement window = AutomationElement.FromHandle(nativeWindow.Handle);
+            string title = string.IsNullOrWhiteSpace(nativeWindow.Title)
+                ? window.Current.Name
+                : nativeWindow.Title;
+            bool packageInstallerWindow =
+                title.Contains("Package", StringComparison.OrdinalIgnoreCase) ||
+                title.Contains("Installer", StringComparison.OrdinalIgnoreCase) ||
+                title.Contains(expectedPackageName, StringComparison.OrdinalIgnoreCase);
+            if (!packageInstallerWindow)
             {
                 continue;
             }
@@ -202,11 +263,52 @@ public sealed class OpenIvPackageInstallerAutomation : IOpenIvPackageInstallerAu
                 continue;
             }
 
-            controls = currentControls;
-            return window;
+            return (window, currentControls);
         }
 
-        return null;
+        return (null, Array.Empty<AutomationElement>());
+    }
+
+    private static HashSet<int> GetOpenIvProcessIds(int startedProcessId, string processName)
+    {
+        var processIds = new HashSet<int> { startedProcessId };
+        foreach (Process openIvProcess in Process.GetProcessesByName(processName))
+        {
+            using (openIvProcess)
+            {
+                processIds.Add(openIvProcess.Id);
+            }
+        }
+
+        return processIds;
+    }
+
+    private static void HideOpenIvWindows(HashSet<int> processIds)
+    {
+        foreach (var window in EnumerateTopLevelWindows(processIds))
+        {
+            ShowWindow(window.Handle, ShowWindowHide);
+        }
+    }
+
+    private static List<(IntPtr Handle, int ProcessId, string Title)> EnumerateTopLevelWindows(HashSet<int> processIds)
+    {
+        var windows = new List<(IntPtr Handle, int ProcessId, string Title)>();
+        EnumWindows((handle, _) =>
+        {
+            GetWindowThreadProcessId(handle, out uint processId);
+            if (!processIds.Contains((int)processId))
+            {
+                return true;
+            }
+
+            var title = new StringBuilder(512);
+            _ = GetWindowText(handle, title, title.Capacity);
+            windows.Add((handle, (int)processId, title.ToString()));
+            return true;
+        }, IntPtr.Zero);
+
+        return windows;
     }
 
     private static bool IsModsFolderChoice(AutomationElement element)
@@ -293,4 +395,20 @@ public sealed class OpenIvPackageInstallerAutomation : IOpenIvPackageInstallerAu
             string.Equals(name, "Done", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(name, "OK", StringComparison.OrdinalIgnoreCase);
     }
+
+    private const int ShowWindowHide = 0;
+
+    private delegate bool EnumWindowsCallback(IntPtr handle, IntPtr extra);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsCallback callback, IntPtr extra);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetWindowText(IntPtr handle, StringBuilder text, int maxCount);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr handle, int command);
 }

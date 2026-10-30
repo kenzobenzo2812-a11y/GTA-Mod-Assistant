@@ -689,7 +689,7 @@
                             <Run Text="{Binding HasConfiguredApiKey, Mode=OneWay}" FontWeight="Bold" />
                         </TextBlock>
 
-                        <CheckBox Content="Automatically install encrypted RPF packages in OpenIV (select mods folder and click Install)"
+                        <CheckBox Content="Automatically install encrypted RPF packages in OpenIV in the background"
                                   IsChecked="{Binding AutoLaunchOpenIvOnEncryptedRpf}"
                                   Margin="0,0,0,20" />
 
