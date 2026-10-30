@@ -108,7 +108,7 @@ public sealed class EndToEndWorkflowTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -163,7 +163,7 @@ public sealed class EndToEndWorkflowTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -208,7 +208,7 @@ public sealed class EndToEndWorkflowTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -259,7 +259,7 @@ public sealed class EndToEndWorkflowTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -303,7 +303,7 @@ public sealed class EndToEndWorkflowTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -364,7 +364,7 @@ public sealed class EndToEndWorkflowTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 

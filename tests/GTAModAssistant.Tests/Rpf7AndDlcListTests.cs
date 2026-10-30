@@ -47,7 +47,7 @@ public sealed class Rpf7AndDlcListTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -74,7 +74,7 @@ public sealed class Rpf7AndDlcListTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -120,7 +120,7 @@ public sealed class Rpf7AndDlcListTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 }

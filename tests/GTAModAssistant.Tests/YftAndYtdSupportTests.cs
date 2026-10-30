@@ -93,7 +93,7 @@ public sealed class YftAndYtdSupportTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -245,7 +245,7 @@ public sealed class YftAndYtdSupportTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -324,7 +324,7 @@ public sealed class YftAndYtdSupportTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -396,7 +396,7 @@ public sealed class YftAndYtdSupportTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -487,7 +487,7 @@ public sealed class YftAndYtdSupportTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -584,7 +584,7 @@ public sealed class YftAndYtdSupportTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -692,7 +692,7 @@ public sealed class YftAndYtdSupportTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -802,7 +802,7 @@ public sealed class YftAndYtdSupportTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 

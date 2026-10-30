@@ -31,7 +31,7 @@ public sealed class SecurityAndDetectionTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -66,7 +66,7 @@ public sealed class SecurityAndDetectionTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 

@@ -61,7 +61,7 @@ public sealed class AiAnalyzerAndCompatibilityTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -118,7 +118,7 @@ public sealed class AiAnalyzerAndCompatibilityTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -168,7 +168,7 @@ public sealed class AiAnalyzerAndCompatibilityTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 
@@ -215,7 +215,7 @@ public sealed class AiAnalyzerAndCompatibilityTests
         }
         finally
         {
-            Directory.Delete(tempDir, recursive: true);
+            SyntheticGtaFixture.DeleteTempDirectory(tempDir);
         }
     }
 

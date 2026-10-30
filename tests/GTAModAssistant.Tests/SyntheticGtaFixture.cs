@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
 using GTAModAssistant.Core.Archives;
+using Microsoft.Data.Sqlite;
 
 namespace GTAModAssistant.Tests;
 
@@ -12,6 +13,12 @@ internal static class SyntheticGtaFixture
         string path = Path.Combine(Path.GetTempPath(), "gtama_tests_" + Guid.NewGuid().ToString("N")[..10]);
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    public static void DeleteTempDirectory(string path)
+    {
+        SqliteConnection.ClearAllPools();
+        Directory.Delete(path, recursive: true);
     }
 
     /// <summary>
