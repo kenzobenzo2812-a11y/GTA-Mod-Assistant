@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>GTAModAssistant.Cli</RootNamespace>
+    <AssemblyName>gtama-cli</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GTAModAssistant.Core\GTAModAssistant.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>GTAModAssistant.ViewModels</RootNamespace>
+    <AssemblyName>GTAModAssistant.ViewModels</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GTAModAssistant.Core\GTAModAssistant.Core.csproj" />
+  </ItemGroup>
+</Project>

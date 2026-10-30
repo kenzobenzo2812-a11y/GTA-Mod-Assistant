@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# GTA Mod Assistant — Pre-Push Main Branch Key Guard
+# Scans commits being pushed (especially to main/master) and aborts if any key/secret appears.
+
+SECRET_CONTENT_REGEX='(sk-(proj-|live-|test-)?[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{30,}|ghp_[A-Za-z0-9]{25,}|github_pat_[A-Za-z0-9_]{30,}|(GTAMA_AI_API_KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY)[[:space:]]*=[[:space:]]*["'\'']?[A-Za-z0-9._-]{12,})'
+ZERO_OID="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_oid remote_ref remote_oid; do
+  if [[ "${local_oid}" == "${ZERO_OID}" ]]; then
+    continue
+  fi
+
+  if [[ "${remote_oid}" == "${ZERO_OID}" ]]; then
+    RANGE="${local_oid}"
+  else
+    RANGE="${remote_oid}..${local_oid}"
+  fi
+
+  if git log -p "${RANGE}" | grep -E "^\\+" | grep -Ev "^\\+\\+\\+" | grep -Eq "${SECRET_CONTENT_REGEX}"; then
+    echo "[BLOCKED BY PRE-PUSH GUARD] Refusing to push commits containing a detected API key or secret to ${remote_ref}!" >&2
+    exit 1
+  fi
+done
+
+exit 0

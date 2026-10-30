@@ -1,0 +1,105 @@
+<Window x:Class="GTAModAssistant.App.Views.RpfTargetSelectionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Select Target RPF7 Archive"
+        Width="680"
+        Height="530"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="#0F172A">
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock x:Name="TitleBlock"
+                       FontSize="17"
+                       FontWeight="Bold"
+                       Foreground="#38BDF8" />
+            <TextBlock x:Name="ReasonBlock"
+                       Foreground="#FDE68A"
+                       FontSize="12.5"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="1"
+                   Text="Suggested GTA V 'mods/' RPF7 Archives (click a suggestion to populate fields below, or type exact paths):"
+                   Foreground="#CBD5E1"
+                   FontSize="12"
+                   Margin="0,0,0,6" />
+
+        <Border Grid.Row="2"
+                Background="#111827"
+                BorderBrush="#334155"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="8"
+                Margin="0,0,0,12">
+            <ListBox x:Name="CandidatesList"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Foreground="#F8FAFC"
+                     SelectionChanged="OnCandidateSelected">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,4">
+                            <TextBlock FontWeight="SemiBold" Foreground="#38BDF8" FontSize="12.5">
+                                <Run Text="{Binding SafeModsOuterRpfPath, Mode=OneWay}" />
+                                <Run Text="  ->  " Foreground="#94A3B8" />
+                                <Run Text="{Binding InternalDirectoryOrFilePath, Mode=OneWay}" Foreground="#E2E8F0" />
+                            </TextBlock>
+                            <TextBlock Text="{Binding Reason}" Foreground="#94A3B8" FontSize="11.5" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <Grid Grid.Row="3" Margin="0,0,0,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Outer Safe 'mods/' RPF:" Foreground="#CBD5E1" VerticalAlignment="Center" Margin="0,0,8,8" />
+            <TextBox Grid.Row="0" Grid.Column="1" x:Name="OuterRpfBox" Style="{StaticResource DarkTextBoxStyle}" Margin="0,0,0,8" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Internal Path Inside RPF:" Foreground="#CBD5E1" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBox Grid.Row="1" Grid.Column="1" x:Name="InnerPathBox" Style="{StaticResource DarkTextBoxStyle}" />
+        </Grid>
+
+        <StackPanel Grid.Row="4" Margin="0,0,0,14">
+            <CheckBox x:Name="ApplyToStemCheck"
+                      IsChecked="True"
+                      Foreground="#E2E8F0"
+                      FontSize="12.5"
+                      Content="Also apply this RPF archive directory to companion files sharing the same model stem (_hi.yft / .ytd)" />
+            <TextBlock x:Name="ValidationErrorBlock"
+                       Foreground="#FCA5A5"
+                       FontSize="12"
+                       Visibility="Collapsed"
+                       Margin="0,6,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Margin="0,0,10,0"
+                    Click="OnCancelClick" />
+            <Button Content="Confirm Safe 'mods/' RPF Target"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Click="OnConfirmClick" />
+        </StackPanel>
+    </Grid>
+</Window>

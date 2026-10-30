@@ -1,0 +1,91 @@
+<Window x:Class="GTAModAssistant.App.Views.NoReadmeDisclaimerDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="No README Found — AI File Inspection Disclaimer"
+        Width="660"
+        Height="430"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="#0F172A">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock x:Name="HeaderBlock"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="#F59E0B" />
+            <TextBlock x:Name="SubheaderBlock"
+                       FontSize="12.5"
+                       Foreground="#CBD5E1"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Amber Disclaimer Box -->
+        <Border Grid.Row="1"
+                Background="#422006"
+                BorderBrush="#D97706"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="14,10"
+                Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="DISCLAIMER — MAY NOT WORK AS PROPERLY WITHOUT AUTHOR INSTRUCTIONS"
+                           FontWeight="Bold"
+                           FontSize="11.5"
+                           Foreground="#FDE68A"
+                           Margin="0,0,0,4" />
+                <TextBlock Text="This mod does not include a README or installation guide. Because author-specific notes, required add-on packs, or custom archive overrides are missing, automatic installation might not work 100% as intended without reviewing the preview paths."
+                           Foreground="#FEF3C7"
+                           FontSize="12.5"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <!-- Cyan AI Deep File Analysis Box -->
+        <Border Grid.Row="2"
+                Background="#0F2137"
+                BorderBrush="#0284C7"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="14,12"
+                Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock Text="AI DEEP FILE &amp; BINARY ANALYSIS AVAILABLE"
+                           FontWeight="Bold"
+                           FontSize="11.5"
+                           Foreground="#38BDF8"
+                           Margin="0,0,0,4" />
+                <TextBlock Text="Even without a README, GTA Mod Assistant can inspect the raw mod files directly — reading RPF7 &amp; RSC7 binary headers (.yft, _hi.yft, .ytd, dlc.rpf), embedded XML/.meta tags (&lt;modelName&gt;, &lt;deviceName&gt;), PE/CLR script headers, and your installed GTA V archives to figure out where each file goes (and ask you if any archive is uncertain)."
+                           Foreground="#E0F2FE"
+                           FontSize="12.5"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,10" />
+                <TextBlock x:Name="ActiveEngineBlock"
+                           FontWeight="SemiBold"
+                           FontSize="12"
+                           Foreground="#34D399"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Margin="0,0,10,0"
+                    Click="OnCancelClick" />
+            <Button Content="Configure AI Settings..."
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Margin="0,0,10,0"
+                    Click="OnOpenAiSettingsClick" />
+            <Button Content="Analyze Files With AI Anyway"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Click="OnProceedClick" />
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,68 @@
+# ============================================================================
+# GTA Mod Assistant — Git Ignore (Strict Key, Secret & Local Data Protection)
+# ============================================================================
+
+# 1. API Keys, Environment Files, Certificates & Encryption Keys (NEVER COMMIT)
+.env
+.env.*
+*.env
+!.env.example
+*.dpapi
+ai_secret.dpapi
+*.key
+*.pem
+*.pfx
+*.p12
+*.cer
+*.crt
+*.secret
+secrets.json
+appsettings.Local.json
+appsettings.*.local.json
+
+# Rockstar / OpenIV extracted key blobs (NEVER COMMIT)
+*ng_key*
+*aes_key*
+keys.dat
+gtav_keys*
+
+# 2. Portable Mode Runtime Data, SQLite Databases, Backups & Stashes
+portable.mode
+GTAModAssistant_Data/
+backups/
+conflict_stash/
+disabled_mods/
+generated_oiv/
+staging/
+*.db
+*.db-shm
+*.db-wal
+
+# 3. .NET / Visual Studio / MSBuild Artifacts
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+TestResults/
+publish/
+releases/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# 4. OS & Temporary Files
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.log

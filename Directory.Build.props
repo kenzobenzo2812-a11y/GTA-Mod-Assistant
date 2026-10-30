@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <VersionPrefix>1.2</VersionPrefix>
+    <Version>1.2.0</Version>
+    <Authors>GTA Mod Assistant</Authors>
+    <Company>GTA Mod Assistant</Company>
+    <Product>GTA Mod Assistant</Product>
+    <Description>AI-powered GTA V Single-Player Mod Manager with RPF7 binary handling, OpenIV integration, verified SHA-256 backups, conflict resolution, and profiles.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GTAMA_BUILD_ROOT)' != ''">
+    <BaseIntermediateOutputPath>$(GTAMA_BUILD_ROOT)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(GTAMA_BUILD_ROOT)/bin/$(MSBuildProjectName)/</BaseOutputPath>
+  </PropertyGroup>
+</Project>
