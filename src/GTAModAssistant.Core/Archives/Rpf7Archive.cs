@@ -455,10 +455,23 @@ public sealed class Rpf7Archive
             uint size = entry.CompressedSize;
             if (size == 0xFFFFFF)
             {
-                stream.Position = byteOffset;
-                Span<byte> rscHdr = stackalloc byte[16];
-                stream.ReadExactly(rscHdr);
-                size = BinaryPrimitives.ReadUInt32LittleEndian(rscHdr.Slice(4, 4));
+                if (byteOffset + 32 > stream.Length)
+                {
+                    throw new InvalidDataException($"RPF7 resource '{entry.Name}' is missing its extended size header.");
+                }
+
+                stream.Position = byteOffset + 16;
+                Span<byte> sizeHeader = stackalloc byte[16];
+                stream.ReadExactly(sizeHeader);
+                // Oversized resource lengths are split across four bytes in the resource payload header.
+                size = (uint)sizeHeader[7]
+                       | ((uint)sizeHeader[14] << 8)
+                       | ((uint)sizeHeader[5] << 16)
+                       | ((uint)sizeHeader[2] << 24);
+                if (size < 0xFFFFFF)
+                {
+                    throw new InvalidDataException($"RPF7 resource '{entry.Name}' has an invalid extended size.");
+                }
             }
 
             if (byteOffset + size > stream.Length)

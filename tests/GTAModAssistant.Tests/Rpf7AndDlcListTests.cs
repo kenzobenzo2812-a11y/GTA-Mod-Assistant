@@ -52,6 +52,37 @@ public sealed class Rpf7AndDlcListTests
     }
 
     [Fact]
+    public void Rpf7Archive_RoundTrips_NestedResource_LargerThan24BitSize()
+    {
+        string tempDir = SyntheticGtaFixture.CreateTempDirectory();
+        try
+        {
+            string rpfPath = Path.Combine(tempDir, "large_nested.rpf");
+            byte[] largeResource = new byte[0x1000000];
+            BinaryPrimitives.WriteUInt32LittleEndian(largeResource.AsSpan(0, 4), Rpf7Archive.Rsc7Magic);
+            BinaryPrimitives.WriteUInt32LittleEndian(largeResource.AsSpan(4, 4), 165u);
+            BinaryPrimitives.WriteUInt32LittleEndian(largeResource.AsSpan(8, 4), 0x50000010u);
+            BinaryPrimitives.WriteUInt32LittleEndian(largeResource.AsSpan(12, 4), 0x20000004u);
+            largeResource[16 + 2] = 1;
+
+            var archive = Rpf7Archive.CreateNewOpenArchive();
+            archive.PutFile(
+                "dlcpacks/patchday/dlc.rpf/x64/models/cdimages/weapons.rpf/w_ar_carbinerifle.ytd",
+                largeResource);
+            archive.SaveAndVerify(rpfPath);
+
+            var reopened = Rpf7Archive.Open(rpfPath);
+            Assert.Equal(
+                largeResource,
+                reopened.ExtractFile("dlcpacks/patchday/dlc.rpf/x64/models/cdimages/weapons.rpf/w_ar_carbinerifle.ytd"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Rpf7Archive_BlocksDirectMutation_WhenNgEncrypted()
     {
         string tempDir = SyntheticGtaFixture.CreateTempDirectory();
