@@ -87,7 +87,13 @@ jobs:
 
           $makensis = Join-Path ${env:ProgramFiles(x86)} "NSIS\makensis.exe"
           if (-not (Test-Path $makensis)) { throw "NSIS was installed but makensis.exe was not found at $makensis." }
-          & $makensis /DPUBLISH_DIR="publish-setup" /DAPP_ICON_PATH="src\GTAModAssistant.App\Assets\app.ico" /DOUTPUT_SETUP_EXE="dist\GTAModAssistant-Setup-win-x64.exe" installer\GTAModAssistant.nsi
+          $workspace = $env:GITHUB_WORKSPACE
+          $publishDir = Join-Path $workspace "publish-setup"
+          $appIcon = Join-Path $workspace "src\GTAModAssistant.App\Assets\app.ico"
+          $setupPath = Join-Path $workspace "dist\GTAModAssistant-Setup-win-x64.exe"
+          $installerScript = Join-Path $workspace "installer\GTAModAssistant.nsi"
+          if (-not (Test-Path $appIcon)) { throw "Installer icon was not found at $appIcon." }
+          & $makensis "/DPUBLISH_DIR=$publishDir" "/DAPP_ICON_PATH=$appIcon" "/DOUTPUT_SETUP_EXE=$setupPath" $installerScript
           if ($LASTEXITCODE -ne 0) { throw "NSIS installer build failed." }
 
       - name: Generate SHA-256 checksums
