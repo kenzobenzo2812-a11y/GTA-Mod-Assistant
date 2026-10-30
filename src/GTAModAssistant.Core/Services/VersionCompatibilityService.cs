@@ -114,7 +114,7 @@ public static partial class VersionCompatibilityService
             string.Equals(Path.GetFileName(f.RelativePath), "gameconfig.xml", StringComparison.OrdinalIgnoreCase));
         bool bundlesScriptHookV = files.Any(f =>
             string.Equals(Path.GetFileName(f.RelativePath), "ScriptHookV.dll", StringComparison.OrdinalIgnoreCase));
-        bool hasAsi = files.Any(f => f.Extension == ".asi");
+        bool hasAsi = files.Any(f => string.Equals(f.Extension, ".asi", StringComparison.OrdinalIgnoreCase));
         bool hasDlcRpf = files.Any(f =>
             string.Equals(Path.GetFileName(f.RelativePath), "dlc.rpf", StringComparison.OrdinalIgnoreCase));
         bool hasShvdnDll = category == ModCategory.ScriptHookVDotNetMod;
@@ -135,6 +135,25 @@ public static partial class VersionCompatibilityService
         {
             prereqs.Add("Updated gameconfig.xml + HeapAdjuster + PackfileLimitAdjuster (recommended for Add-On DLCs)");
         }
+
+        if (hasAsi && !gameEnv.AsiLoaderInstalled)
+        {
+            details.Add("Required prerequisite not detected: an ASI Loader (dinput8.dll) was not found in the GTA V root folder.");
+        }
+        if ((hasAsi || bundlesScriptHookV) && !gameEnv.ScriptHookVInstalled)
+        {
+            details.Add("Required prerequisite not detected: ScriptHookV.dll was not found in the GTA V root folder.");
+        }
+        if (hasShvdnDll && !gameEnv.ScriptHookVDotNetInstalled)
+        {
+            details.Add("Required prerequisite not detected: ScriptHookVDotNet was not detected.");
+        }
+        if ((hasDlcRpf || category is ModCategory.AddOnDlcPack or ModCategory.RpfAssetReplacement or ModCategory.DataOrConfigMod) &&
+            !gameEnv.OpenIvAsiInstalled)
+        {
+            details.Add("Required prerequisite not detected: OpenIV.asi was not found in the GTA V root folder.");
+        }
+        bool missingPrerequisites = details.Count > 0;
 
         if (currentBuild <= 0)
         {
@@ -241,17 +260,19 @@ public static partial class VersionCompatibilityService
             details.Add($"Asset format verified compatible with GTA V v{gameEnv.GameVersion} (Build {currentBuild}).");
         }
 
-        if (!gameEnv.OpenIvAsiInstalled && (hasDlcRpf || category is ModCategory.AddOnDlcPack or ModCategory.RpfAssetReplacement or ModCategory.DataOrConfigMod))
+        if (missingPrerequisites)
         {
-            details.Add("Note: OpenIV.asi was not detected in your GTA V root folder yet; enable it in OpenIV > Tools > ASI Manager so GTA V loads the 'mods' folder.");
+            details.Add("Install or enable the listed prerequisites, then scan GTA V again. Compatibility checks are advisory and cannot guarantee a mod will work.");
         }
 
         return new CompatibilityReport(
-            CompatibilitySeverity.Compatible,
+            missingPrerequisites ? CompatibilitySeverity.Advisory : CompatibilitySeverity.Compatible,
             minBuild,
             targetBuild,
             currentBuild,
-            $"Compatible with GTA V v{gameEnv.GameVersion}",
+            missingPrerequisites
+                ? $"Check prerequisites for GTA V v{gameEnv.GameVersion}"
+                : $"Compatible with GTA V v{gameEnv.GameVersion}",
             details,
             prereqs);
     }

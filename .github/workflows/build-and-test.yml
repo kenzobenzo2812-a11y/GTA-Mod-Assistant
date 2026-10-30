@@ -100,6 +100,24 @@ jobs:
       - name: Publish versioned GitHub release
         shell: pwsh
         run: |
+          $tag = $env:GITHUB_REF_NAME
+          $releaseUrl = "https://github.com/kenzobenzo2812-a11y/GTA-Mod-Assistant/releases"
+          $releaseNotes = @"
+          ## Download and install
+
+          - [Portable Windows x64 app](https://github.com/kenzobenzo2812-a11y/GTA-Mod-Assistant/releases/download/$tag/GTAModAssistant-Portable-win-x64.exe)
+          - [Windows setup installer](https://github.com/kenzobenzo2812-a11y/GTA-Mod-Assistant/releases/download/$tag/GTAModAssistant-Setup-win-x64.exe)
+          - [SHA-256 checksums](https://github.com/kenzobenzo2812-a11y/GTA-Mod-Assistant/releases/download/$tag/SHA256SUMS.txt)
+
+          For the newest version at any time, visit [Latest downloads]($releaseUrl/latest).
+
+          ## Source
+
+          - [Browse source for $tag](https://github.com/kenzobenzo2812-a11y/GTA-Mod-Assistant/tree/$tag)
+          - [Download source archive](https://github.com/kenzobenzo2812-a11y/GTA-Mod-Assistant/archive/refs/tags/$tag.zip)
+          "@
+          $releaseNotes | Set-Content dist/RELEASE-NOTES.md -Encoding utf8
+
           $releaseArgs = @(
             "release", "create", $env:GITHUB_REF_NAME,
             "dist/GTAModAssistant-Portable-win-x64.exe",
@@ -107,7 +125,7 @@ jobs:
             "dist/SHA256SUMS.txt",
             "--verify-tag",
             "--title", "GTA Mod Assistant $env:GITHUB_REF_NAME",
-            "--generate-notes"
+            "--notes-file", "dist/RELEASE-NOTES.md"
           )
           if ($env:GITHUB_REF_NAME.Contains("-")) {
             $releaseArgs += "--prerelease"

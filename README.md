@@ -1,4 +1,4 @@
-# GTA Mod Assistant (v1.2.0-beta)
+# GTA Mod Assistant (v1.2.1)
 
 An AI-powered **Windows Desktop Application (C# / .NET 8 / WPF)** that analyzes, plans, previews, backs up, installs, verifies, manages profiles for, and cleanly rolls back **GTA V Single-Player mods** — supporting **Epic Games, Steam, and Rockstar Games Launcher GTA V**, **OpenIV** (`%LOCALAPPDATA%\New Technology Studio\Apps\OpenIV\OpenIV.exe`), **RPF7 binary containers**, **RAGE `.yft` / `_hi.yft` / `.ytd` / `+hi.ytd` assets**, and safe `mods\` folder isolation.
 
@@ -29,6 +29,7 @@ Every version tag pushed to this repository runs the tests, builds the portable 
 ## Privacy and AI
 
 - Mod analysis works locally using deterministic rules and file inspection.
+- Automatic update checks contact the GitHub Releases API for version information; they do not send game files, mod packages, or logs. Updates are reviewed and downloaded from GitHub by the user.
 - Optional AI analysis runs only when enabled and a cloud API key or local model endpoint is configured. The request includes the mod's README text (if present), a file-name/size manifest, inspected file metadata, and the detected GTA V version.
 - You choose the AI endpoint. A local Ollama endpoint can keep these requests on your machine; cloud endpoints receive the request data under their own privacy policies.
 - API keys are stored locally using Windows DPAPI. The application does not include a bundled API key.
@@ -47,6 +48,11 @@ Every version tag pushed to this repository runs the tests, builds the portable 
 - **Asks the User When Uncertain (Never Guesses):** If any `.yft`, `_hi.yft`, or `.ytd` file has an ambiguous or unspecified target archive, it is flagged `[Action Needed] Choose Target RPF Archive...` and opens the **Select Target RPF7 Archive** dialog (`RpfTargetSelectionDialog`) rather than guessing.
 - **Pre-Install Preview, Duplicate Filename & Conflict Detection:** Previews exact file names, asset types, safe `mods\` RPF paths, resolution sources, and replacement/conflict status before changing anything — catching both intra-mod duplicate filenames (e.g., `2K/police.ytd` vs `4K/police.ytd` with per-row checkboxes & `Keep First Duplicate Only`) and cross-mod RPF replacement conflicts.
 - **Per-File + Snapshot SHA-256 Backups, Restore & Uninstall:** Originals are never overwritten in vanilla GTA V folders; `mods\` copies are created via SHA-256-verified copy-on-write, every replaced `.yft`/`_hi.yft`/`.ytd` entry is backed up individually and in a pre-install snapshot before replacement, and one-click Uninstall or Snapshot Restore restores original bytes with post-write SHA-256 verification.
+- **Compatibility Checker:** Checks game-build requirements and common ScriptHookV, ASI Loader, OpenIV, and ScriptHookVDotNet prerequisites before installation. It blocks known build mismatches and presents warnings for missing requirements; it cannot guarantee compatibility for every third-party mod.
+- **Automatic Update Checks:** Checks the latest stable GitHub release at startup and on request. Updates open the official release page for review; the app never silently replaces its own executable.
+- **Crash Diagnosis:** Analyzes selected text-based GTA V/mod `.log` or `.txt` files locally for known crash signatures and suggests troubleshooting steps. It does not upload logs or claim a definitive root cause; binary `.dmp` files are not parsed.
+- **Modpacks:** Export a profile's enabled/disabled states and original source packages into a `.gtmapack` file. Import safely extracts and verifies package hashes; review and install each mod through the normal analyzer workflow. Import does not directly modify GTA V.
+- **Texture / Model Preview:** Renders supported image files (PNG, JPEG, BMP, GIF, TIFF) from the staged package. For proprietary `.yft`/`.ytd` assets, it reports RSC7 header metadata; rendering those game-native models/textures is not supported.
 
 ---
 
@@ -58,7 +64,7 @@ Every version tag pushed to this repository runs the tests, builds the portable 
 | **MVVM Layer** | `src/GTAModAssistant.ViewModels` | `MainViewModel`, async commands, per-step include toggles, uncertain RPF target prompts, progress reporting, log filtering, conflict prompts, and mandatory confirmation guards before destructive operations. |
 | **WPF Desktop UI** | `src/GTAModAssistant.App` | Modern dark Windows WPF interface (`Scan Game`, `Add Mod`, `Install`, `Backup`, `Restore`, `Installed Mods`, `Logs`, Pre-Install File/Path/Conflict Preview Grid, `RpfTargetSelectionDialog`, `ConflictResolutionDialog`, Drag-and-Drop overlay, Profile Switcher, and DPAPI-encrypted AI Settings). |
 | **CLI Companion** | `src/GTAModAssistant.Cli` | Headless `gtama-cli` (`scan`, `analyze`, `install`, `uninstall`, `list`, `logs`, `--rpf-target`, `--keep-first-duplicate`) sharing the same Core library. |
-| **Automated Tests** | `tests/GTAModAssistant.Tests` | **21 `xUnit` unit & end-to-end integration tests** verifying folder/ZIP/binary-RAR `.yft`+`_hi.yft`+`.ytd` imports, multi-archive routing, uncertain-target prompts, duplicate/conflict detection, RPF7 binary round-trips, `dlclist.xml` deduplication, Zip-Slip & `.exe` blocking, per-file backup/restore/uninstall, profile switching, and NG-encrypted RPF honesty rules. |
+| **Automated Tests** | `tests/GTAModAssistant.Tests` | `xUnit` unit and end-to-end integration tests cover archive imports, multi-archive routing, compatibility, crash-log signatures, modpack hash verification, asset metadata, duplicate/conflict detection, RPF7 binary round-trips, path safety, backup/restore/uninstall, profiles, and encrypted-RPF behavior. |
 
 ---
 

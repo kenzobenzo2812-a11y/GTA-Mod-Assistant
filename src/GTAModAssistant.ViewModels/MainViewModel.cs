@@ -222,6 +222,7 @@ public sealed class MainViewModel : ObservableObject
 
     public SqliteHistoryRepository Repository => _repository;
     public SecretStore SecretStore => _secretStore;
+    public string AppDataDirectory => _paths.RootDataDirectory;
 
     public string AppVersionBadge
     {

@@ -5,11 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <VersionPrefix>1.2</VersionPrefix>
-    <Version>1.2.0</Version>
+    <Version>1.2.2</Version>
     <Authors>GTA Mod Assistant</Authors>
     <Company>GTA Mod Assistant</Company>
     <Product>GTA Mod Assistant</Product>
-    <Description>AI-powered GTA V Single-Player Mod Manager with RPF7 binary handling, OpenIV integration, verified SHA-256 backups, conflict resolution, and profiles.</Description>
+    <Description>AI-powered GTA V Single-Player Mod Manager with compatibility checks, update checks, local crash diagnosis, modpack import/export, asset previews, RPF7 handling, verified backups, and profiles.</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(GTAMA_BUILD_ROOT)' != ''">

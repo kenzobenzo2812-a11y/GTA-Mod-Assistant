@@ -124,6 +124,22 @@
                             Style="{StaticResource SecondaryButtonStyle}"
                             Margin="0,0,8,4"
                             Command="{Binding ShowLogsCommand}" />
+                    <Button Content="Check Updates"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,0,8,4"
+                            Click="OnCheckUpdatesClick" />
+                    <Button Content="Diagnose Crash Log"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,0,8,4"
+                            Click="OnDiagnoseCrashClick" />
+                    <Button Content="Export Modpack"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,0,8,4"
+                            Click="OnExportModpackClick" />
+                    <Button Content="Import Modpack"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,0,8,4"
+                            Click="OnImportModpackClick" />
                 </WrapPanel>
             </Grid>
         </Border>
@@ -287,7 +303,7 @@
                                         Command="{Binding DataContext.InstallModCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
                             </DockPanel>
 
-                            <!-- Compatibility Verdict Banner -->
+                            <!-- Compatibility Checker Verdict -->
                             <Border Background="{Binding Compatibility.Severity, Converter={StaticResource SeverityToBrush}}"
                                     CornerRadius="6"
                                     Padding="12,10"
@@ -301,8 +317,22 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+                                    <TextBlock Text="Prerequisites to check" FontWeight="SemiBold" FontSize="12" Foreground="#FFFFFF" Margin="0,8,0,2" />
+                                    <ItemsControl ItemsSource="{Binding Compatibility.RequiredPrerequisites}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" Foreground="#F1F5F9" FontSize="12" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
                             </Border>
+
+                            <Button Content="Preview Textures / Models Before Install"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,0,0,12"
+                                    Click="OnPreviewAssetsClick" />
 
                             <!-- AI Summary -->
                             <TextBlock Text="AI README &amp; Binary Inspection Summary" FontWeight="SemiBold" Foreground="{StaticResource AccentCyanBrush}" FontSize="12.5" Margin="0,0,0,4" />
